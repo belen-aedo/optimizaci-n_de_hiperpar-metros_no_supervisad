@@ -1,0 +1,12 @@
+# Entorno verificado: Python 3.10
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11
+scikit-learn>=1.7
+optuna>=4.4
+pyarrow>=14.0        # lectura de los .parquet de preprocessor_v2
+psutil>=5.9          # medicion de CPU y RAM en el dispositivo de borde
+PyYAML>=6.0
+matplotlib>=3.8
+tensorflow>=2.19     # solo para el detector Autoencoder
+pytest>=7.4          # solo para ejecutar tests/

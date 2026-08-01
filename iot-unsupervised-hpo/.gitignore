@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+data/splits/
+outputs/optuna/
+outputs/results/
+outputs/logs/
+outputs/tables/
+!outputs/.gitkeep
+.ipynb_checkpoints/
+*.pkl
+*.h5
+*.keras

@@ -1,0 +1,60 @@
+# =============================================================================
+# Configuracion del experimento
+# Evaluacion de metricas no supervisadas para la optimizacion de
+# hiperparametros en detectores de anomalias IoT desplegados en el borde
+# =============================================================================
+
+paths:
+  # ROOT del pipeline preprocessor_v2 (el mismo valor de su config.yaml).
+  # Debe contener Datasets/Parquet/<dataset>/<selector>/{train,test}/best_features.parquet
+  preprocessor_root: "C:/Users/belen/Desktop/Taller de investigacion"
+  dataset_name: "Ton-IoT"
+  # Selector elegido empiricamente en la etapa preliminar (ver informe, Tabla I)
+  selector: "l1_lasso"
+  splits_dir: "data/splits"
+  outputs_dir: "outputs"
+
+dataset:
+  # Columna con la etiqueta binaria (config.json de preprocessor_v2: "label": "category")
+  label_col: "category"
+  normal_label: "0"
+  anomaly_label: "1"
+  # Columnas de metadatos que NO son features y deben descartarse
+  metadata_cols: ["label", "type"]
+
+# Protocolo antifuga: entrenamiento y validacion contienen SOLO trafico normal.
+# El conjunto de prueba concentra todo el trafico de ataque.
+split:
+  train_frac: 0.70        # del trafico benigno
+  val_frac: 0.15          # del trafico benigno
+  test_benign_frac: 0.15  # del trafico benigno
+  attack_frac_in_test: 1.0  # 1.0 = todos los ataques van al test
+  seed: 42
+
+optimization:
+  n_trials: 100
+  seeds: [42, 43, 44, 45, 46]
+  # Presupuesto de latencia usado como restriccion dura DURANTE la busqueda,
+  # medido en la maquina de desarrollo. La verificacion definitiva se hace
+  # sobre la Raspberry Pi 5 en edge_benchmark.py.
+  dev_latency_budget_ms: 100.0
+  # Submuestreo opcional para acelerar la busqueda (null = usar todo)
+  max_train_rows: 50000
+  max_val_rows: 20000
+
+edge:
+  max_latency_ms: 100.0
+  max_cpu_percent: 50.0
+  n_inference_runs: 1000
+  n_warmup_runs: 100
+
+# Emparejamiento detector <-> metrica (informe, Tabla II)
+detectors:
+  iforest: ["silhouette", "davies_bouldin"]
+  lof: ["silhouette", "davies_bouldin"]
+  autoencoder: ["reconstruction", "stability"]
+
+objectives:
+  # Numero de replicas perturbadas para la metrica de estabilidad
+  stability_replicas: 10
+  stability_noise_sigma: 0.01
