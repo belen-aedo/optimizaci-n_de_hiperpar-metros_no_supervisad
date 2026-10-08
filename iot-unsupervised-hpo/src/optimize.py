@@ -42,6 +42,7 @@ def suggest_params(trial, detector: str, seed: int) -> dict:
             "max_samples": trial.suggest_float("max_samples", 0.1, 1.0),
             "max_features": trial.suggest_float("max_features", 0.3, 1.0),
             "contamination": trial.suggest_float("contamination", 1e-3, 0.1, log=True),
+            "n_jobs": -1,
             "random_state": seed,
         }
     if detector == "lof":
@@ -50,6 +51,7 @@ def suggest_params(trial, detector: str, seed: int) -> dict:
             "leaf_size": trial.suggest_int("leaf_size", 10, 60),
             "metric": trial.suggest_categorical("metric", ["euclidean", "manhattan"]),
             "contamination": trial.suggest_float("contamination", 1e-3, 0.1, log=True),
+            "n_jobs": -1,
         }
     if detector == "autoencoder":
         return {
@@ -151,13 +153,16 @@ def main() -> None:
     ap.add_argument("--trials", type=int, default=None)
     ap.add_argument("--seeds", type=int, nargs="*", default=None)
     ap.add_argument("--format", default="parquet", choices=["parquet", "csv"])
+    ap.add_argument("--fast", action="store_true",
+                    help="Prueba rapida: 25 trials y una semilla (42)")
     ap.add_argument("--all", action="store_true",
                     help="Ejecuta todas las combinaciones de config['detectors']")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
-    n_trials = args.trials or cfg["optimization"]["n_trials"]
-    seeds = args.seeds or cfg["optimization"]["seeds"]
+    n_trials = args.trials or (25 if args.fast else cfg["optimization"]["n_trials"])
+    seeds = (args.seeds if args.seeds is not None
+             else ([42] if args.fast else cfg["optimization"]["seeds"]))
 
     X_train, _ = load_split(cfg, "train", args.format)
     X_val, _ = load_split(cfg, "val", args.format)

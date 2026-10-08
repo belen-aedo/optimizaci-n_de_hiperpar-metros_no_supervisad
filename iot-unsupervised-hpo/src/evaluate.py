@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -51,11 +52,45 @@ def verify_test_integrity(cfg, fmt: str) -> None:
     print("Integridad del conjunto de prueba verificada (SHA-256 coincide).")
 
 
-def evaluate_config(detector_name: str, params: dict, X_train, X_test, y_test) -> dict:
+def evaluate_config(
+    detector_name: str,
+    params: dict,
+    X_train,
+    X_test,
+    y_test,
+    batch_size: int = 2048,
+) -> dict:
     Detector = DETECTORS[detector_name]
+    params = dict(params)
+    if detector_name in ("iforest", "lof"):
+        params["n_jobs"] = 1
+
     det = Detector(**params).fit(X_train)
-    y_pred = det.predict_outliers(X_test)
+    predictions = [
+        det.predict_outliers(X_test[start:start + batch_size])
+        for start in range(0, len(X_test), batch_size)
+    ]
+    y_pred = np.concatenate(predictions) if predictions else np.empty(0, dtype=int)
     return supervised_metrics(y_test, y_pred)
+
+
+def load_optuna_study(path: Path) -> tuple[str, dict, str | None, int, float | None]:
+    with path.open("r", encoding="utf-8") as fh:
+        st = json.load(fh)
+    params = dict(st.get("best_params") or {})
+    detector = st["detector"]
+    seed = int(st.get("seed", 0))
+    if detector in ("iforest", "autoencoder"):
+        params.setdefault("random_state", seed)
+    return detector, params, st.get("metric"), seed, st.get("best_value")
+
+
+def config_cache_key(detector: str, params: dict) -> str:
+    """Identifica ajustes idénticos para no volver a entrenar el mismo modelo."""
+    effective_params = dict(params)
+    if detector in ("iforest", "lof"):
+        effective_params["n_jobs"] = 1
+    return f"{detector}:{json.dumps(effective_params, sort_keys=True, separators=(',', ':'))}"
 
 
 def main() -> None:
@@ -63,7 +98,13 @@ def main() -> None:
     ap.add_argument("--config", default=None)
     ap.add_argument("--format", default="parquet", choices=["parquet", "csv"])
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument(
+        "--batch-size", type=int, default=512,
+        help="Muestras por lote durante la inferencia (menor usa menos RAM).",
+    )
     args = ap.parse_args()
+    if args.batch_size < 1:
+        ap.error("--batch-size debe ser un entero positivo.")
 
     cfg = load_config(args.config)
     set_seeds(args.seed)
@@ -77,16 +118,26 @@ def main() -> None:
           f"| ataques en test: {int(y_test.sum()):,}")
 
     rows = []
+    seen_configs = set()
+    cached_metrics = {}
 
     # ---- 1. Linea base: hiperparametros por defecto ----------------------- #
     for detector_name in cfg["detectors"]:
         try:
-            m = evaluate_config(detector_name, {}, X_train, X_test, y_test)
+            key = config_cache_key(detector_name, {})
+            m = cached_metrics.get(key)
+            if m is None:
+                m = evaluate_config(
+                    detector_name, {}, X_train, X_test, y_test, args.batch_size
+                )
+                cached_metrics[key] = m
         except Exception as exc:
             print(f"  [!] linea base {detector_name}: {exc}")
             continue
-        rows.append({"detector": detector_name, "config": "linea_base",
-                     "metric": "por_defecto", "seed": args.seed, **m})
+        row = {"detector": detector_name, "config": "linea_base",
+               "metric": "por_defecto", "seed": args.seed, **m}
+        rows.append(row)
+        seen_configs.add((detector_name, "linea_base", "por_defecto", args.seed))
         print(f"  linea base {detector_name:12s} MCC={m['MCC']:.4f}")
 
     # ---- 2. Configuraciones optimizadas ----------------------------------- #
@@ -96,50 +147,76 @@ def main() -> None:
         print("\nAVISO: no hay estudios en outputs/optuna. "
               "Ejecute primero src/optimize.py.")
     for f in files:
-        st = json.loads(f.read_text(encoding="utf-8"))
-        params = dict(st["best_params"])
-        if st["detector"] in ("iforest", "autoencoder"):
-            params.setdefault("random_state", st["seed"])
         try:
-            m = evaluate_config(st["detector"], params, X_train, X_test, y_test)
+            detector, params, metric, seed, objective_value = load_optuna_study(f)
+        except Exception as exc:
+            print(f"  [!] {f.name}: no se pudo leer el estudio ({exc})")
+            continue
+
+        duplicate_key = (detector, "optimizada", metric, seed)
+        if duplicate_key in seen_configs:
+            continue
+        seen_configs.add(duplicate_key)
+
+        try:
+            key = config_cache_key(detector, params)
+            m = cached_metrics.get(key)
+            if m is None:
+                m = evaluate_config(
+                    detector, params, X_train, X_test, y_test, args.batch_size
+                )
+                cached_metrics[key] = m
         except Exception as exc:
             print(f"  [!] {f.name}: {exc}")
             continue
-        rows.append({
-            "detector": st["detector"], "config": "optimizada",
-            "metric": st["metric"], "seed": st["seed"],
-            "objective_value": st["best_value"], **m,
-        })
-        print(f"  {st['detector']:12s} {st['metric']:15s} seed={st['seed']} "
-              f"MCC={m['MCC']:.4f}")
+        row = {
+            "detector": detector, "config": "optimizada",
+            "metric": metric, "seed": seed,
+            "objective_value": objective_value, **m,
+        }
+        rows.append(row)
+        print(f"  {detector:12s} {metric:15s} seed={seed} MCC={m['MCC']:.4f}")
 
     if not rows:
         raise RuntimeError("No se evaluo ninguna configuracion.")
 
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame.from_records(rows)
     out = outputs_dir(cfg) / "results"
     out.mkdir(parents=True, exist_ok=True)
     df.to_csv(out / "final_evaluation.csv", index=False)
 
     # ---- 3. Equilibrio deteccion/costo vs. linea base ---------------------- #
     balance = []
-    for detector_name, grp in df.groupby("detector"):
-        base = grp[grp["config"] == "linea_base"]
-        opt = grp[grp["config"] == "optimizada"]
-        if base.empty or opt.empty:
+    by_detector = defaultdict(list)
+    for row in rows:
+        by_detector[row["detector"]].append(row)
+
+    for detector_name, records in by_detector.items():
+        base = [r for r in records if r["config"] == "linea_base"]
+        opt = [r for r in records if r["config"] == "optimizada"]
+        if not base or not opt:
             continue
-        base_mcc = float(base["MCC"].iloc[0])
-        agg = opt.groupby("metric")["MCC"].agg(["mean", "std", "count"])
-        best_metric = agg["mean"].idxmax()
+
+        base_mcc = float(base[0]["MCC"])
+        metric_scores = defaultdict(list)
+        for row in opt:
+            metric_scores[row["metric"]].append(float(row["MCC"]))
+
+        if not metric_scores:
+            continue
+
+        best_metric, values = max(metric_scores.items(), key=lambda item: float(np.mean(item[1])))
+        values_arr = np.asarray(values, dtype=np.float64)
         balance.append({
             "detector": detector_name,
             "mcc_linea_base": round(base_mcc, 4),
             "mejor_metrica": best_metric,
-            "mcc_medio": round(float(agg.loc[best_metric, "mean"]), 4),
-            "mcc_std": round(float(agg.loc[best_metric, "std"] or 0.0), 4),
-            "n_semillas": int(agg.loc[best_metric, "count"]),
-            "delta_mcc": round(float(agg.loc[best_metric, "mean"]) - base_mcc, 4),
+            "mcc_medio": round(float(values_arr.mean()), 4),
+            "mcc_std": round(float(values_arr.std(ddof=1) if values_arr.size > 1 else 0.0), 4),
+            "n_semillas": int(values_arr.size),
+            "delta_mcc": round(float(values_arr.mean()) - base_mcc, 4),
         })
+
     if balance:
         pd.DataFrame(balance).to_csv(out / "balance.csv", index=False)
         print("\nMejor metrica por detector:")

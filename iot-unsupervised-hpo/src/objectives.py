@@ -184,7 +184,13 @@ def _score_space(detector, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     s = np.asarray(detector.scores(X), dtype=np.float64).ravel()
     sd = s.std()
     z = (s - s.mean()) / sd if sd > 0 else s * 0.0
-    part = detector.predict_outliers(X)
+    # Ambos detectores sklearn usan `offset_` para separar normal/anomalia.
+    # Reutilizar los puntajes evita una segunda inferencia por trial.
+    uses_default_partition = detector.__class__ in (IForestDetector, LOFDetector)
+    if uses_default_partition and hasattr(detector.model, "offset_"):
+        part = (s > -float(detector.model.offset_)).astype(int)
+    else:
+        part = detector.predict_outliers(X)
     return z.reshape(-1, 1), part
 
 

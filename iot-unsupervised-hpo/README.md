@@ -88,7 +88,13 @@ python src/optimize.py --detector iforest --metric silhouette
 
 # todas las combinaciones de config/experiment.yaml
 python src/optimize.py --all
+
+# prueba rapida para iterar sin ejecutar todo el protocolo
+python src/optimize.py --all --fast
 ```
+
+`--fast` usa 25 trials y una sola semilla (`42`). No modifica la configuracion
+del protocolo completo, que conserva 100 trials y cinco semillas.
 
 Salidas: `outputs/optuna/<detector>_<metrica>_seed<n>.json` con los mejores hiperparámetros, el valor del objetivo y la latencia medida.
 
@@ -109,6 +115,10 @@ python src/evaluate.py
 ```
 
 Único script autorizado a leer las etiquetas del bloque de prueba. Verifica primero el hash del manifiesto y aborta si el conjunto fue alterado. Evalúa la línea base (hiperparámetros por defecto) y cada configuración optimizada.
+En equipos con memoria limitada, como Raspberry Pi 5, se puede reducir el tamaño
+de lote de inferencia para disminuir el uso máximo de RAM (a costa de algo más
+de tiempo), por ejemplo: `python src/evaluate.py --batch-size 512`. La evaluación
+se ejecuta secuencialmente y limita a un hilo los detectores sklearn.
 
 Salidas: `outputs/results/final_evaluation.csv`, `balance.csv` y `hypothesis_check.json`.
 
@@ -156,19 +166,13 @@ PYTHONPATH=src pytest tests/ -v
 
 ## Limitación conocida
 
-Los selectores de características empleados en la etapa preliminar (`f_classif`, `mutual_info_classif`, `chi2`, `l1_lasso`) utilizan las etiquetas para puntuar variables. La selección se realiza una única vez y se aplica de forma idéntica a todas las condiciones experimentales, por lo que no puede favorecer a un criterio de optimización sobre otro, pero constituye una ventaja común no disponible en un despliegue estrictamente ciego. Está declarada en la sección de amenazas a la validez del informe.
-
+Los selectores de características empleados en la etapa preliminar (`f_classif`, `mutual_info_classif`, `chi2`, `l1_lasso`) utilizan las etiquetas para puntuar variables. La selección se realiza una única vez y se aplica de forma idéntica a todas las condiciones experimentales, por lo que no puede favorecer a un criterio de optimización sobre otro, pero constituye una ventaja común no disponible en un despliegue estrictamente ciego.
 ---
 
 ## Declaración de uso de inteligencia artificial
 
-Se utilizó Claude (Anthropic) como asistente en las siguientes tareas:
+Se utilizó Claude como asistente en las siguientes tareas:
 
-- Estructuración del repositorio y redacción inicial de los scripts de `src/`.
+- Estructuración del repositorio y redacción inicial de los scripts de `src/`
 - Formalización matemática de las cuatro funciones objetivo no supervisadas.
-- Redacción y edición del manuscrito en LaTeX.
 - Generación de las tablas y figuras a partir de los resultados de ejecución.
-
-**Verificación realizada por la autora:** la cadena completa (`prepare_splits` → `optimize` → `edge_benchmark` → `evaluate` → `report`) se ejecutó de extremo a extremo sobre datos sintéticos de control antes de aplicarla al conjunto real, comprobando que las funciones objetivo devuelven valores dentro de su rango teórico, que el conjunto de prueba no se abre durante la optimización y que las particiones respetan el protocolo antifuga. Los tests de `tests/test_objectives.py` verifican estas propiedades de forma automática. Los resultados numéricos reportados en el informe provienen exclusivamente de ejecuciones reales del pipeline; ningún valor fue generado por el asistente.
-
-El diseño experimental, la pregunta de investigación, la hipótesis y las decisiones metodológicas son de la autora.

@@ -183,7 +183,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", default="outputs/ml_benchmark_results.csv")
     ap.add_argument("--outdir", default="outputs")
-    ap.add_argument("--lang", default="es", choices=["es", "en"],
+    ap.add_argument("--lang", default="en", choices=["es", "en"],
                     help="Idioma de los rotulos de la figura")
     args = ap.parse_args()
 
