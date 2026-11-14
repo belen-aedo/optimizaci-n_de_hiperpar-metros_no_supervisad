@@ -35,6 +35,9 @@ METRIC_ES = {
     "davies_bouldin": "Davies--Bould.",
     "reconstruction": "Error recons.",
     "stability": "Estabilidad",
+    "consistency": "Consistencia",
+    "oracle": "Or\\'aculo (MCC)",
+    "oracle_q": "Or\\'aculo (MCC, $q$ libre)",
 }
 
 
@@ -75,6 +78,7 @@ def table_performance(cfg, path: Path) -> None:
         return
 
     df = pd.read_csv(src)
+    df = df[df["config"] != "linea_base_nativa"]      # referencia, no entra en la tabla
     agg = (df.groupby(["detector", "metric"])
              [["MCC", "BACC", "F1", "Recall", "FPR", "FNR"]]
              .mean().reset_index())
@@ -108,6 +112,10 @@ def table_hardware(cfg, path: Path) -> None:
         return
 
     df = pd.read_csv(src)
+    sel = outputs_dir(cfg) / "results" / "selected_models.csv"
+    if sel.exists():          # solo las configuraciones elegidas (sin etiquetas)
+        keys = ["detector", "metric", "seed", "rank"]
+        df = df.merge(pd.read_csv(sel)[keys], on=keys, how="inner")
     agg = (df.groupby(["detector", "metric"])
              [["latency_median_ms", "latency_p95_ms", "cpu_percent", "ram_peak_mb"]]
              .mean().reset_index())

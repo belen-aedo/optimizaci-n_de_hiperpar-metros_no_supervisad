@@ -1,30 +1,40 @@
 """
-objectives.py — Etapa 1 (bloque 4 del diagrama metodologico).
+objectives.py — detectores y funciones objetivo NO supervisadas.
 
-Implementa las cuatro funciones objetivo ESTRICTAMENTE NO SUPERVISADAS que se
-comparan en esta investigacion, junto con los envoltorios de los tres
-detectores. Ninguna funcion de este modulo recibe etiquetas.
+Ninguna funcion de este modulo recibe etiquetas.
+
+Regla de decision (umbral)
+--------------------------
+Todos los detectores entregan un puntaje s(x) (mayor = mas anomalo). La
+decision es  s(x) > tau,  con  tau = percentil q de los puntajes de un bloque
+de CALIBRACION de trafico normal (mitad del bloque `val`, ver common.split_val).
+q se fija a priori (config threshold.q) y es igual para todos los detectores y
+escenarios: el umbral deja de ser un hiperparametro que el optimizador pueda
+manipular. Esto elimina el optimo degenerado de Silhouette / Davies-Bouldin
+(marcar ~0 % de las muestras como anomalas).
 
 Metricas
 --------
-    silhouette      (iForest, LOF)  -> maximizar
-    davies_bouldin  (iForest, LOF)  -> minimizar
-    reconstruction  (Autoencoder)   -> minimizar
-    stability       (Autoencoder)   -> maximizar
+    silhouette      maximizar   (indice sobre el espacio de puntajes, 2 grupos)
+    davies_bouldin  minimizar   (idem)
+    reconstruction  minimizar   (error medio de reconstruccion; natural en AE)
+    stability       maximizar   (Spearman medio entre replicas con ruido)
+    consistency     maximizar   (Spearman medio entre modelos reajustados con
+                                 submuestras distintas del entrenamiento)
 
-Transformacion al espacio de puntajes
--------------------------------------
-Silhouette y Davies-Bouldin fueron concebidos para evaluar agrupamientos y no
-pueden aplicarse a los arboles de iForest ni a las distancias locales de LOF.
-Por eso se calculan sobre el vector continuo de puntajes de anomalia z,
-estandarizado, con la particion binaria inducida por el umbral de decision del
-propio modelo. Esta transformacion es una decision metodologica documentada en
-el informe y constituye una limitacion reconocida del estudio.
+Autoencoder en el borde
+-----------------------
+El AE se entrena con Keras (si hay TensorFlow) o con scikit-learn, pero la
+INFERENCIA es siempre una pasada hacia adelante en NumPy con los pesos
+exportados. Asi la Raspberry Pi no necesita TensorFlow y se evita el costo fijo
+de `model.predict` (~50 ms por muestra en los resultados previos).
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
+import pickle
+import warnings
+from typing import Any, Dict
 
 import numpy as np
 from scipy.stats import spearmanr
@@ -32,15 +42,15 @@ from sklearn.ensemble import IsolationForest
 from sklearn.metrics import davies_bouldin_score, silhouette_score
 from sklearn.neighbors import LocalOutlierFactor
 
-# Direccion de optimizacion de cada metrica
 DIRECTION = {
     "silhouette": "maximize",
     "davies_bouldin": "minimize",
     "reconstruction": "minimize",
     "stability": "maximize",
+    "consistency": "maximize",
+    "oracle": "maximize",       # MCC con etiquetas de test_oracle, q fijo
+    "oracle_q": "maximize",     # MCC con etiquetas de test_oracle, q tambien se busca
 }
-
-# Valor devuelto cuando la configuracion es degenerada (un solo grupo, etc.)
 PENALTY = {"maximize": -1.0, "minimize": 1e6}
 
 
@@ -51,216 +61,274 @@ def penalty_for(metric: str) -> float:
 # --------------------------------------------------------------------------- #
 # Detectores
 # --------------------------------------------------------------------------- #
-class IForestDetector:
-    """Isolation Forest. score_samples: mayor = mas normal."""
+class BaseDetector:
+    name = ""
+    q = 0.95
+    threshold_ = None
+    calib_scores_ = None
 
+    def scores(self, X: np.ndarray) -> np.ndarray:  # mayor = mas anomalo
+        raise NotImplementedError
+
+    def set_threshold(self, X_calib: np.ndarray, q: float | None = None):
+        if q is not None:
+            self.q = float(q)
+        self.calib_scores_ = np.sort(np.asarray(self.scores(X_calib), dtype=np.float64))
+        self.threshold_ = float(np.quantile(self.calib_scores_, self.q))
+        return self
+
+    def threshold_for(self, q: float) -> float:
+        return float(np.quantile(self.calib_scores_, q))
+
+    def predict_outliers(self, X: np.ndarray, q: float | None = None) -> np.ndarray:
+        thr = self.threshold_ if q is None else self.threshold_for(q)
+        return (self.scores(X) > thr).astype(int)
+
+    def predict_native(self, X: np.ndarray) -> np.ndarray:
+        """Decision que toma la biblioteca por defecto (solo para la linea base nativa)."""
+        raise NotImplementedError
+
+
+class IForestDetector(BaseDetector):
     name = "iforest"
 
     def __init__(self, **params):
+        params = dict(params)
+        params.pop("contamination", None)        # el umbral es el percentil q
+        self.random_state = params.pop("random_state", 42)
         self.params = params
-        self.model = IsolationForest(random_state=params.pop("random_state", 42), **params)
 
     def fit(self, X: np.ndarray) -> "IForestDetector":
+        p = dict(self.params)
+        ms = p.get("max_samples", "auto")
+        if isinstance(ms, (int, np.integer)):
+            p["max_samples"] = int(min(ms, len(X)))
+        self.model = IsolationForest(random_state=self.random_state, n_jobs=1, **p)
         self.model.fit(X)
         return self
 
-    def scores(self, X: np.ndarray) -> np.ndarray:
-        # Se invierte el signo para que mayor = mas anomalo
+    def scores(self, X):
         return -self.model.score_samples(X)
 
-    def predict_outliers(self, X: np.ndarray) -> np.ndarray:
-        """1 = anomalia, 0 = normal."""
+    def predict_native(self, X):
         return (self.model.predict(X) == -1).astype(int)
 
 
-class LOFDetector:
-    """Local Outlier Factor en modo novelty (permite puntuar datos nuevos)."""
-
+class LOFDetector(BaseDetector):
+    """LOF en modo novelty. Guarda TODO el train: el costo en RAM y latencia
+    crece con su tamano (por eso common.train_for lo acota)."""
     name = "lof"
 
     def __init__(self, **params):
+        params = dict(params)
+        params.pop("contamination", None)
         params.pop("random_state", None)
         self.params = params
-        self.model = LocalOutlierFactor(novelty=True, **params)
 
-    def fit(self, X: np.ndarray) -> "LOFDetector":
+    def fit(self, X):
+        self.model = LocalOutlierFactor(novelty=True, n_jobs=1, **self.params)
         self.model.fit(X)
         return self
 
-    def scores(self, X: np.ndarray) -> np.ndarray:
+    def scores(self, X):
         return -self.model.score_samples(X)
 
-    def predict_outliers(self, X: np.ndarray) -> np.ndarray:
+    def predict_native(self, X):
         return (self.model.predict(X) == -1).astype(int)
 
 
-class AutoencoderDetector:
-    """
-    Autoencoder denso entrenado solo con trafico normal.
-    El puntaje de anomalia es el error de reconstruccion por muestra.
-    Requiere TensorFlow/Keras.
-    """
+def _tf_available() -> bool:
+    try:
+        import tensorflow  # noqa: F401
+        return True
+    except Exception:
+        return False
 
+
+class AutoencoderDetector(BaseDetector):
+    """Autoencoder denso entrenado solo con trafico normal. Puntaje = MSE por fila."""
     name = "autoencoder"
 
     def __init__(self, n_layers=2, units=64, latent_dim=8, learning_rate=1e-3,
                  batch_size=256, dropout=0.0, epochs=30, random_state=42,
-                 threshold_percentile=95.0, verbose=0):
-        self.cfg = dict(
-            n_layers=n_layers, units=units, latent_dim=latent_dim,
-            learning_rate=learning_rate, batch_size=batch_size, dropout=dropout,
-            epochs=epochs, random_state=random_state,
-            threshold_percentile=threshold_percentile, verbose=verbose,
-        )
-        self.model = None
-        self.threshold_ = None
+                 backend="auto", **_ignored):
+        self.cfg = dict(n_layers=n_layers, units=units, latent_dim=latent_dim,
+                        learning_rate=learning_rate, batch_size=batch_size,
+                        dropout=dropout, epochs=epochs, random_state=random_state)
+        self.backend = backend
+        self.layers_: list = []
+        self.native_threshold_ = None
 
-    def _build(self, n_features: int):
-        try:
-            import tensorflow as tf
-            from tensorflow import keras
-            from tensorflow.keras import layers
-        except ImportError as exc:  # pragma: no cover
-            raise ImportError(
-                "El Autoencoder requiere TensorFlow. Instale con:\n"
-                "    pip install 'tensorflow>=2.19'\n"
-                "Los detectores iForest y LOF no lo necesitan."
-            ) from exc
+    def _sizes(self):
+        c = self.cfg
+        return [max(c["latent_dim"] + 1, int(c["units"] / (2 ** i))) for i in range(c["n_layers"])]
 
+    def _fit_keras(self, X):
+        import tensorflow as tf
+        from tensorflow import keras
+        from tensorflow.keras import layers
         c = self.cfg
         tf.random.set_seed(c["random_state"])
-        sizes = [max(c["latent_dim"] + 1, int(c["units"] / (2 ** i)))
-                 for i in range(c["n_layers"])]
-
-        inp = keras.Input(shape=(n_features,))
+        sizes = self._sizes()
+        inp = keras.Input(shape=(X.shape[1],))
         h = inp
-        for s in sizes:                       # encoder
+        for s in sizes:
             h = layers.Dense(s, activation="relu")(h)
             if c["dropout"] > 0:
                 h = layers.Dropout(c["dropout"])(h)
-        h = layers.Dense(c["latent_dim"], activation="relu", name="latent")(h)
-        for s in reversed(sizes):             # decoder
+        h = layers.Dense(c["latent_dim"], activation="relu")(h)
+        for s in reversed(sizes):
             h = layers.Dense(s, activation="relu")(h)
-        out = layers.Dense(n_features, activation="linear")(h)
-
+        out = layers.Dense(X.shape[1], activation="linear")(h)
         model = keras.Model(inp, out)
-        model.compile(
-            optimizer=keras.optimizers.Adam(learning_rate=c["learning_rate"]),
-            loss="mse",
-        )
-        return model
+        model.compile(optimizer=keras.optimizers.Adam(learning_rate=c["learning_rate"]), loss="mse")
+        model.fit(X, X, epochs=c["epochs"], batch_size=c["batch_size"], shuffle=True, verbose=0)
+        w = model.get_weights()                       # [W1, b1, W2, b2, ...]
+        self.layers_ = [(w[i].astype(np.float32), w[i + 1].astype(np.float32))
+                        for i in range(0, len(w), 2)]
 
-    def fit(self, X: np.ndarray) -> "AutoencoderDetector":
+    def _fit_sklearn(self, X):
+        from sklearn.exceptions import ConvergenceWarning
+        from sklearn.neural_network import MLPRegressor
         c = self.cfg
-        self.model = self._build(X.shape[1])
-        self.model.fit(
-            X, X, epochs=c["epochs"], batch_size=c["batch_size"],
-            shuffle=True, verbose=c["verbose"],
-        )
-        # Umbral fijado sobre trafico normal de entrenamiento (sin etiquetas)
-        self.threshold_ = float(np.percentile(self.scores(X), c["threshold_percentile"]))
+        sizes = self._sizes()
+        mlp = MLPRegressor(hidden_layer_sizes=tuple(sizes + [c["latent_dim"]] + sizes[::-1]),
+                           activation="relu", solver="adam",
+                           learning_rate_init=c["learning_rate"],
+                           batch_size=int(min(c["batch_size"], len(X))),
+                           max_iter=int(c["epochs"]), tol=1e-6, shuffle=True,
+                           random_state=c["random_state"])
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ConvergenceWarning)
+            mlp.fit(X, X)       # nota: este backend no aplica dropout
+        self.layers_ = [(W.astype(np.float32), b.astype(np.float32))
+                        for W, b in zip(mlp.coefs_, mlp.intercepts_)]
+
+    def fit(self, X):
+        use_keras = self.backend == "keras" or (self.backend == "auto" and _tf_available())
+        (self._fit_keras if use_keras else self._fit_sklearn)(X)
+        self.native_threshold_ = float(np.percentile(self.scores(X), 95.0))
         return self
 
-    def scores(self, X: np.ndarray) -> np.ndarray:
-        rec = self.model.predict(X, verbose=0, batch_size=self.cfg["batch_size"])
-        return np.mean((X - rec) ** 2, axis=1)
+    def _forward(self, X: np.ndarray) -> np.ndarray:
+        h = X.astype(np.float32, copy=False)
+        for i, (W, b) in enumerate(self.layers_):
+            h = h @ W + b
+            if i < len(self.layers_) - 1:
+                np.maximum(h, 0.0, out=h)
+        return h
 
-    def predict_outliers(self, X: np.ndarray) -> np.ndarray:
-        return (self.scores(X) > self.threshold_).astype(int)
+    def scores(self, X):
+        X = np.asarray(X, dtype=np.float32)
+        out = np.empty(len(X), dtype=np.float64)
+        for s in range(0, len(X), 8192):
+            xb = X[s:s + 8192]
+            out[s:s + 8192] = np.mean((xb - self._forward(xb)) ** 2, axis=1)
+        return out
+
+    def predict_native(self, X):
+        return (self.scores(X) > self.native_threshold_).astype(int)
 
 
-DETECTORS = {
-    "iforest": IForestDetector,
-    "lof": LOFDetector,
-    "autoencoder": AutoencoderDetector,
-}
+DETECTORS = {"iforest": IForestDetector, "lof": LOFDetector, "autoencoder": AutoencoderDetector}
+
+
+def model_size_kb(det) -> float:
+    try:
+        return len(pickle.dumps(det, protocol=pickle.HIGHEST_PROTOCOL)) / 1024.0
+    except Exception:
+        return float("nan")
 
 
 # --------------------------------------------------------------------------- #
-# Funciones objetivo
+# Funciones objetivo (X = bloque `objetivo` de validacion: solo normal)
 # --------------------------------------------------------------------------- #
-def _score_space(detector, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    """Devuelve (z, particion) donde z es el puntaje estandarizado en 2D."""
-    s = np.asarray(detector.scores(X), dtype=np.float64).ravel()
+def _score_space(det, X):
+    s = np.asarray(det.scores(X), dtype=np.float64).ravel()
     sd = s.std()
     z = (s - s.mean()) / sd if sd > 0 else s * 0.0
-    # Ambos detectores sklearn usan `offset_` para separar normal/anomalia.
-    # Reutilizar los puntajes evita una segunda inferencia por trial.
-    uses_default_partition = detector.__class__ in (IForestDetector, LOFDetector)
-    if uses_default_partition and hasattr(detector.model, "offset_"):
-        part = (s > -float(detector.model.offset_)).astype(int)
-    else:
-        part = detector.predict_outliers(X)
-    return z.reshape(-1, 1), part
+    return z.reshape(-1, 1), (s > det.threshold_).astype(int)
 
 
-def objective_silhouette(detector, X: np.ndarray) -> float:
-    z, part = _score_space(detector, X)
-    if len(np.unique(part)) < 2 or len(z) < 3:
+def objective_silhouette(det, X, cfg) -> float:
+    z, part = _score_space(det, X)
+    if len(np.unique(part)) < 2:
         return penalty_for("silhouette")
-    return float(silhouette_score(z, part))
+    n = min(len(z), int(cfg["optimization"]["silhouette_sample"]))
+    try:
+        return float(silhouette_score(z, part, sample_size=n, random_state=0))
+    except ValueError:
+        return penalty_for("silhouette")
 
 
-def objective_davies_bouldin(detector, X: np.ndarray) -> float:
-    z, part = _score_space(detector, X)
-    if len(np.unique(part)) < 2 or len(z) < 3:
+def objective_davies_bouldin(det, X, cfg) -> float:
+    z, part = _score_space(det, X)
+    if len(np.unique(part)) < 2:
         return penalty_for("davies_bouldin")
     return float(davies_bouldin_score(z, part))
 
 
-def objective_reconstruction(detector, X: np.ndarray) -> float:
-    """Error medio de reconstruccion sobre trafico normal de validacion."""
-    return float(np.mean(detector.scores(X)))
+def objective_reconstruction(det, X, cfg) -> float:
+    return float(np.mean(det.scores(X)))
 
 
-def objective_stability(detector, X: np.ndarray, n_replicas: int = 10,
-                        sigma: float = 0.01, seed: int = 42) -> float:
-    """
-    Consistencia del ordenamiento de puntajes ante perturbaciones menores.
-
-    Se generan n_replicas copias del conjunto de validacion con ruido gaussiano
-    de desviacion sigma (los datos estan escalados, por lo que sigma opera en
-    unidades normalizadas) y se mide la correlacion de Spearman promedio entre
-    todos los pares de vectores de puntajes. Las filas se mantienen alineadas
-    entre replicas, de modo que la correlacion es interpretable.
-    """
-    rng = np.random.default_rng(seed)
-    reps = []
-    for _ in range(n_replicas):
-        Xn = X + rng.normal(0.0, sigma, size=X.shape).astype(X.dtype)
-        reps.append(np.asarray(detector.scores(Xn), dtype=np.float64).ravel())
-
+def _mean_pairwise_spearman(vectors) -> float | None:
     corrs = []
-    for i in range(len(reps)):
-        for j in range(i + 1, len(reps)):
-            if np.std(reps[i]) == 0 or np.std(reps[j]) == 0:
+    for i in range(len(vectors)):
+        for j in range(i + 1, len(vectors)):
+            if np.std(vectors[i]) == 0 or np.std(vectors[j]) == 0:
                 continue
-            rho = spearmanr(reps[i], reps[j]).statistic
+            rho = spearmanr(vectors[i], vectors[j]).statistic
             if np.isfinite(rho):
                 corrs.append(rho)
-    if not corrs:
-        return penalty_for("stability")
-    return float(np.mean(corrs))
+    return float(np.mean(corrs)) if corrs else None
 
 
-OBJECTIVES = {
-    "silhouette": objective_silhouette,
-    "davies_bouldin": objective_davies_bouldin,
-    "reconstruction": objective_reconstruction,
-    "stability": objective_stability,
-}
+def objective_stability(det, X, cfg, seed: int = 42) -> float:
+    """Estabilidad de ranking: Spearman medio entre los puntajes de n replicas del
+    bloque objetivo con ruido gaussiano (sigma en unidades estandarizadas)."""
+    o = cfg["objectives"]
+    rng = np.random.default_rng(seed)
+    reps = [np.asarray(det.scores(X + rng.normal(0.0, o["stability_noise_sigma"], X.shape)
+                                  .astype(X.dtype)), dtype=np.float64).ravel()
+            for _ in range(int(o["stability_replicas"]))]
+    v = _mean_pairwise_spearman(reps)
+    return penalty_for("stability") if v is None else v
 
 
-def compute_objective(metric: str, detector, X: np.ndarray,
-                      cfg: Dict[str, Any] | None = None) -> float:
-    """Punto de entrada unico usado por optimize.py."""
-    if metric not in OBJECTIVES:
-        raise ValueError(f"Metrica desconocida: {metric}. Opciones: {list(OBJECTIVES)}")
+def objective_consistency(det, X, cfg, ctx, seed: int = 42) -> float:
+    """Consistencia bajo remuestreo: se reajusta el MISMO hiperparametrizado sobre
+    `consistency_boot` submuestras distintas del train y se promedia el Spearman
+    entre los puntajes que cada modelo asigna al bloque objetivo."""
+    if ctx is None:
+        raise ValueError("consistency requiere ctx={'Detector','params','X_train'}")
+    o = cfg["optimization"]
+    rng = np.random.default_rng(seed)
+    Xtr = ctx["X_train"]
+    k = max(int(o["consistency_frac"] * len(Xtr)), 10)
+    vecs = []
+    for _ in range(int(o["consistency_boot"])):
+        p = dict(ctx["params"])
+        if "random_state" in p:
+            p["random_state"] = int(rng.integers(0, 2**31 - 1))
+        d = ctx["Detector"](**p).fit(Xtr[rng.choice(len(Xtr), size=k, replace=False)])
+        vecs.append(np.asarray(d.scores(X), dtype=np.float64).ravel())
+    v = _mean_pairwise_spearman(vecs)
+    return penalty_for("consistency") if v is None else v
+
+
+UNSUPERVISED = ("silhouette", "davies_bouldin", "reconstruction", "stability", "consistency")
+
+
+def compute_objective(metric: str, det, X, cfg: Dict[str, Any], ctx=None) -> float:
+    if metric == "silhouette":
+        return objective_silhouette(det, X, cfg)
+    if metric == "davies_bouldin":
+        return objective_davies_bouldin(det, X, cfg)
+    if metric == "reconstruction":
+        return objective_reconstruction(det, X, cfg)
     if metric == "stability":
-        o = (cfg or {}).get("objectives", {})
-        return objective_stability(
-            detector, X,
-            n_replicas=o.get("stability_replicas", 10),
-            sigma=o.get("stability_noise_sigma", 0.01),
-        )
-    return OBJECTIVES[metric](detector, X)
+        return objective_stability(det, X, cfg)
+    if metric == "consistency":
+        return objective_consistency(det, X, cfg, ctx)
+    raise ValueError(f"Metrica no supervisada desconocida: {metric}. Opciones: {UNSUPERVISED}")

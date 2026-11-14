@@ -1,0 +1,40 @@
+# Agrega estas claves a tu config/experiment.yaml (las que ya tienes se mantienen).
+# Todas tienen valor por defecto en common.py: si no las escribes, se usan esos.
+
+threshold:
+  q: 0.95                    # percentil de calibracion = tasa objetivo de falsas alarmas 5 %
+  sensitivity_q: [0.90, 0.95, 0.99]   # solo se REPORTAN, no se usan para elegir
+  calib_frac: 0.5            # mitad de `val` para calibrar el umbral, mitad para el objetivo
+
+split:
+  oracle_frac_of_test: 0.5   # parte de la prueba que usa el oraculo (la otra es test_final)
+  refit_scaler: true         # reescalar con media/desv. del train normal
+  report_prevalences: [0.05, 0.10]
+  # attack_frac_in_test: 1.0 # <1 submuestrea ataques (tambien puedes usar mas trafico normal)
+
+optimization:
+  top_k: 5                   # configuraciones por busqueda que se miden en la Raspberry
+  oracle: true
+  max_train_rows_lof: 20000  # LOF guarda todo el train en RAM
+  consistency_boot: 3
+  consistency_frac: 0.7
+
+edge:
+  max_latency_ms: 100
+  max_cpu_percent: 50        # ahora es % de CPU TOTAL al ritmo flow_rate_per_s
+  max_ram_mb: 512
+  flow_rate_per_s: 100       # flujos por segundo que debe sostener el dispositivo
+  latency_stat: p95          # median | p95
+  dev_slowdown_factor: 5     # la Pi se supone ~5x mas lenta que el equipo de desarrollo
+
+autoencoder:
+  backend: auto              # auto | keras | sklearn   (la inferencia es NumPy siempre)
+
+search_space:
+  iforest_max_samples: absolute   # absolute (64..4096) | fraction (0.1..1.0, como el informe)
+
+detectors:                   # que metricas se emparejan con cada detector
+  iforest: [silhouette, davies_bouldin]
+  lof: [silhouette, davies_bouldin]
+  autoencoder: [reconstruction, stability]
+  # puedes agregar consistency a cualquiera

@@ -12,3 +12,4 @@ outputs/tables/
 *.pkl
 *.h5
 *.keras
+.venv*/

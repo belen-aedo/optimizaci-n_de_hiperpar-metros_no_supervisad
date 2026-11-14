@@ -1,60 +1,60 @@
-# =============================================================================
-# Configuracion del experimento
-# Evaluacion de metricas no supervisadas para la optimizacion de
-# hiperparametros en detectores de anomalias IoT desplegados en el borde
-# =============================================================================
-
 paths:
-  # ROOT del pipeline preprocessor_v2 (el mismo valor de su config.yaml).
-  # Debe contener Datasets/Parquet/<dataset>/<selector>/{train,test}/best_features.parquet
-  preprocessor_root: "C:/Users/belen/Desktop/Taller de investigacion"
+  preprocessor_root: 'C:\Users\belen\Desktop\Taller de investigacion'
   dataset_name: "Ton-IoT"
-  # Selector elegido empiricamente en la etapa preliminar (ver informe, Tabla I)
   selector: "l1_lasso"
   splits_dir: "data/splits"
   outputs_dir: "outputs"
 
 dataset:
-  # Columna con la etiqueta binaria (config.json de preprocessor_v2: "label": "category")
   label_col: "category"
   normal_label: "0"
-  anomaly_label: "1"
-  # Columnas de metadatos que NO son features y deben descartarse
-  metadata_cols: ["label", "type"]
+  metadata_cols:
+    - "label"
+    - "type"
+    - "ts"
+    - "src_ip"
+    - "dst_ip"
+    - "src_port"
+    - "dst_port"
 
-# Protocolo antifuga: entrenamiento y validacion contienen SOLO trafico normal.
-# El conjunto de prueba concentra todo el trafico de ataque.
 split:
-  train_frac: 0.70        # del trafico benigno
-  val_frac: 0.15          # del trafico benigno
-  test_benign_frac: 0.15  # del trafico benigno
-  attack_frac_in_test: 1.0  # 1.0 = todos los ataques van al test
   seed: 42
+  train_frac: 0.70
+  val_frac: 0.15
+  attack_frac_in_test: 1.0
+  oracle_frac_of_test: 0.5
+  refit_scaler: true
+  report_prevalences: [0.05, 0.10]
+
+threshold:
+  q: 0.95
+  sensitivity_q: [0.90, 0.95, 0.99]
+  calib_frac: 0.5
 
 optimization:
   n_trials: 100
   seeds: [42, 43, 44, 45, 46]
-  # Presupuesto de latencia usado como restriccion dura DURANTE la busqueda,
-  # medido en la maquina de desarrollo. La verificacion definitiva se hace
-  # sobre la Raspberry Pi 5 en edge_benchmark.py.
-  dev_latency_budget_ms: 100.0
-  # Submuestreo opcional para acelerar la busqueda (null = usar todo)
-  max_train_rows: 50000
-  max_val_rows: 20000
+  top_k: 5
+  oracle: true
+  max_train_rows_lof: 20000
+  consistency_boot: 3
+  consistency_frac: 0.7
 
 edge:
-  max_latency_ms: 100.0
-  max_cpu_percent: 50.0
-  n_inference_runs: 1000
-  n_warmup_runs: 100
+  max_latency_ms: 100
+  max_cpu_percent: 50
+  max_ram_mb: 512
+  flow_rate_per_s: 100
+  latency_stat: "p95"
+  dev_slowdown_factor: 5
 
-# Emparejamiento detector <-> metrica (informe, Tabla II)
+autoencoder:
+  backend: "auto"
+
+search_space:
+  iforest_max_samples: "absolute"
+
 detectors:
-  iforest: ["silhouette", "davies_bouldin"]
-  lof: ["silhouette", "davies_bouldin"]
-  autoencoder: ["reconstruction", "stability"]
-
-objectives:
-  # Numero de replicas perturbadas para la metrica de estabilidad
-  stability_replicas: 10
-  stability_noise_sigma: 0.01
+  iforest: [silhouette, davies_bouldin]
+  lof: [silhouette, davies_bouldin]
+  autoencoder: [reconstruction, stability]

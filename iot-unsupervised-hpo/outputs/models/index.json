@@ -1,0 +1,1206 @@
+[
+  {
+    "detector": "iforest",
+    "metric": "silhouette",
+    "seed": 42,
+    "rank": 0,
+    "config": "optimizada",
+    "value": 0.8531338690859996,
+    "params": {
+      "max_samples": 3293,
+      "n_estimators": 50,
+      "max_features": 0.5083538873434081,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 2.0675499999999998,
+    "model_kb": 600.2685546875,
+    "file": "iforest__silhouette__seed42__rank0.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "silhouette",
+    "seed": 42,
+    "rank": 1,
+    "config": "optimizada",
+    "value": 0.8030169084667569,
+    "params": {
+      "max_samples": 2038,
+      "n_estimators": 100,
+      "max_features": 0.42727747704497043,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 5.10805,
+    "model_kb": 945.65234375,
+    "file": "iforest__silhouette__seed42__rank1.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "silhouette",
+    "seed": 42,
+    "rank": 2,
+    "config": "optimizada",
+    "value": 0.8004933089951972,
+    "params": {
+      "max_samples": 3199,
+      "n_estimators": 75,
+      "max_features": 0.4644215155361701,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 3.0355999999999996,
+    "model_kb": 914.099609375,
+    "file": "iforest__silhouette__seed42__rank2.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "silhouette",
+    "seed": 42,
+    "rank": 3,
+    "config": "optimizada",
+    "value": 0.7998231191401838,
+    "params": {
+      "max_samples": 1355,
+      "n_estimators": 150,
+      "max_features": 0.9539913616232568,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 6.3013,
+    "model_kb": 1640.1640625,
+    "file": "iforest__silhouette__seed42__rank3.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "silhouette",
+    "seed": 42,
+    "rank": 4,
+    "config": "optimizada",
+    "value": 0.7973892391797108,
+    "params": {
+      "max_samples": 1618,
+      "n_estimators": 50,
+      "max_features": 0.4593159016366296,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 1.83755,
+    "model_kb": 447.7314453125,
+    "file": "iforest__silhouette__seed42__rank4.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "davies_bouldin",
+    "seed": 42,
+    "rank": 0,
+    "config": "optimizada",
+    "value": 0.28120269785599433,
+    "params": {
+      "max_samples": 76,
+      "n_estimators": 50,
+      "max_features": 0.3210611755806285,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 2.0941,
+    "model_kb": 118.74609375,
+    "file": "iforest__davies_bouldin__seed42__rank0.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "davies_bouldin",
+    "seed": 42,
+    "rank": 1,
+    "config": "optimizada",
+    "value": 0.28584338926674085,
+    "params": {
+      "max_samples": 67,
+      "n_estimators": 50,
+      "max_features": 0.3310609410220145,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 2.1025,
+    "model_kb": 114.12890625,
+    "file": "iforest__davies_bouldin__seed42__rank1.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "davies_bouldin",
+    "seed": 42,
+    "rank": 2,
+    "config": "optimizada",
+    "value": 0.29358664030269244,
+    "params": {
+      "max_samples": 70,
+      "n_estimators": 50,
+      "max_features": 0.4793574827005124,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 2.09525,
+    "model_kb": 140.9189453125,
+    "file": "iforest__davies_bouldin__seed42__rank2.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "davies_bouldin",
+    "seed": 42,
+    "rank": 3,
+    "config": "optimizada",
+    "value": 0.3070228362766302,
+    "params": {
+      "max_samples": 65,
+      "n_estimators": 50,
+      "max_features": 0.3347857357722305,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 1.7293,
+    "model_kb": 113.78515625,
+    "file": "iforest__davies_bouldin__seed42__rank3.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "davies_bouldin",
+    "seed": 42,
+    "rank": 4,
+    "config": "optimizada",
+    "value": 0.31863513936206733,
+    "params": {
+      "max_samples": 71,
+      "n_estimators": 50,
+      "max_features": 0.5196034764316365,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 1.7282000000000002,
+    "model_kb": 147.4736328125,
+    "file": "iforest__davies_bouldin__seed42__rank4.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "silhouette",
+    "seed": 42,
+    "rank": 0,
+    "config": "optimizada",
+    "value": 0.9463907800843825,
+    "params": {
+      "n_neighbors": 85,
+      "leaf_size": 60,
+      "metric": "manhattan"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.5432,
+    "model_kb": 1740.0927734375,
+    "file": "lof__silhouette__seed42__rank0.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "silhouette",
+    "seed": 42,
+    "rank": 1,
+    "config": "optimizada",
+    "value": 0.9462539622504329,
+    "params": {
+      "n_neighbors": 84,
+      "leaf_size": 20,
+      "metric": "manhattan"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.3604,
+    "model_kb": 1726.4208984375,
+    "file": "lof__silhouette__seed42__rank1.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "silhouette",
+    "seed": 42,
+    "rank": 2,
+    "config": "optimizada",
+    "value": 0.9461118216522152,
+    "params": {
+      "n_neighbors": 83,
+      "leaf_size": 22,
+      "metric": "manhattan"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.4,
+    "model_kb": 1712.7490234375,
+    "file": "lof__silhouette__seed42__rank2.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "silhouette",
+    "seed": 42,
+    "rank": 3,
+    "config": "optimizada",
+    "value": 0.9459640575686572,
+    "params": {
+      "n_neighbors": 82,
+      "leaf_size": 42,
+      "metric": "manhattan"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.6019,
+    "model_kb": 1699.0771484375,
+    "file": "lof__silhouette__seed42__rank3.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "silhouette",
+    "seed": 42,
+    "rank": 4,
+    "config": "optimizada",
+    "value": 0.9456502105141587,
+    "params": {
+      "n_neighbors": 80,
+      "leaf_size": 55,
+      "metric": "manhattan"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.44635,
+    "model_kb": 1671.7333984375,
+    "file": "lof__silhouette__seed42__rank4.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "davies_bouldin",
+    "seed": 42,
+    "rank": 0,
+    "config": "optimizada",
+    "value": 0.9986088564812987,
+    "params": {
+      "n_neighbors": 97,
+      "leaf_size": 44,
+      "metric": "euclidean"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.86395,
+    "model_kb": 1904.1552734375,
+    "file": "lof__davies_bouldin__seed42__rank0.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "davies_bouldin",
+    "seed": 42,
+    "rank": 1,
+    "config": "optimizada",
+    "value": 1.0034990042159728,
+    "params": {
+      "n_neighbors": 95,
+      "leaf_size": 53,
+      "metric": "euclidean"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.86745,
+    "model_kb": 1876.8115234375,
+    "file": "lof__davies_bouldin__seed42__rank1.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "davies_bouldin",
+    "seed": 42,
+    "rank": 2,
+    "config": "optimizada",
+    "value": 1.0078408456030417,
+    "params": {
+      "n_neighbors": 94,
+      "leaf_size": 50,
+      "metric": "euclidean"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.69755,
+    "model_kb": 1863.1396484375,
+    "file": "lof__davies_bouldin__seed42__rank2.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "davies_bouldin",
+    "seed": 42,
+    "rank": 3,
+    "config": "optimizada",
+    "value": 1.0119206248206831,
+    "params": {
+      "n_neighbors": 93,
+      "leaf_size": 28,
+      "metric": "euclidean"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.65985,
+    "model_kb": 1849.4677734375,
+    "file": "lof__davies_bouldin__seed42__rank3.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "davies_bouldin",
+    "seed": 42,
+    "rank": 4,
+    "config": "optimizada",
+    "value": 1.0119206248206831,
+    "params": {
+      "n_neighbors": 93,
+      "leaf_size": 31,
+      "metric": "euclidean"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.6630499999999999,
+    "model_kb": 1849.4677734375,
+    "file": "lof__davies_bouldin__seed42__rank4.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "reconstruction",
+    "seed": 42,
+    "rank": 0,
+    "config": "optimizada",
+    "value": 0.08188656815599339,
+    "params": {
+      "n_layers": 2,
+      "units": 113,
+      "latent_dim": 14,
+      "learning_rate": 0.0023602176766265017,
+      "batch_size": 512,
+      "dropout": 0.007323756353126251,
+      "epochs": 70,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0317,
+    "model_kb": 96.1044921875,
+    "file": "autoencoder__reconstruction__seed42__rank0.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "reconstruction",
+    "seed": 42,
+    "rank": 1,
+    "config": "optimizada",
+    "value": 0.09177574035401145,
+    "params": {
+      "n_layers": 2,
+      "units": 115,
+      "latent_dim": 12,
+      "learning_rate": 0.003092030040651841,
+      "batch_size": 512,
+      "dropout": 0.1177158501159606,
+      "epochs": 80,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0353,
+    "model_kb": 97.7373046875,
+    "file": "autoencoder__reconstruction__seed42__rank1.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "reconstruction",
+    "seed": 42,
+    "rank": 2,
+    "config": "optimizada",
+    "value": 0.10570394727339347,
+    "params": {
+      "n_layers": 2,
+      "units": 78,
+      "latent_dim": 14,
+      "learning_rate": 0.0027281392393720986,
+      "batch_size": 512,
+      "dropout": 0.004843982486051442,
+      "epochs": 60,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.07015,
+    "model_kb": 57.220703125,
+    "file": "autoencoder__reconstruction__seed42__rank2.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "reconstruction",
+    "seed": 42,
+    "rank": 3,
+    "config": "optimizada",
+    "value": 0.1093866988743345,
+    "params": {
+      "n_layers": 2,
+      "units": 97,
+      "latent_dim": 12,
+      "learning_rate": 0.0008943675555974538,
+      "batch_size": 512,
+      "dropout": 0.02930696463602575,
+      "epochs": 70,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0318,
+    "model_kb": 76.2216796875,
+    "file": "autoencoder__reconstruction__seed42__rank3.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "reconstruction",
+    "seed": 42,
+    "rank": 4,
+    "config": "optimizada",
+    "value": 0.11482936913116525,
+    "params": {
+      "n_layers": 2,
+      "units": 126,
+      "latent_dim": 9,
+      "learning_rate": 0.002103778134015583,
+      "batch_size": 512,
+      "dropout": 0.1239747482811555,
+      "epochs": 50,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0557,
+    "model_kb": 111.1865234375,
+    "file": "autoencoder__reconstruction__seed42__rank4.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "stability",
+    "seed": 42,
+    "rank": 0,
+    "config": "optimizada",
+    "value": 0.9730022882138025,
+    "params": {
+      "n_layers": 3,
+      "units": 89,
+      "latent_dim": 9,
+      "learning_rate": 0.0009129615250608663,
+      "batch_size": 256,
+      "dropout": 0.21714108025307086,
+      "epochs": 30,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0373,
+    "model_kb": 72.7216796875,
+    "file": "autoencoder__stability__seed42__rank0.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "stability",
+    "seed": 42,
+    "rank": 1,
+    "config": "optimizada",
+    "value": 0.9728447529108357,
+    "params": {
+      "n_layers": 1,
+      "units": 118,
+      "latent_dim": 14,
+      "learning_rate": 0.00026587543983272726,
+      "batch_size": 512,
+      "dropout": 0.12958350559263473,
+      "epochs": 40,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0283,
+    "model_kb": 54.498046875,
+    "file": "autoencoder__stability__seed42__rank1.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "stability",
+    "seed": 42,
+    "rank": 2,
+    "config": "optimizada",
+    "value": 0.9728345482357997,
+    "params": {
+      "n_layers": 3,
+      "units": 80,
+      "latent_dim": 6,
+      "learning_rate": 0.00036791137726276867,
+      "batch_size": 256,
+      "dropout": 0.19726110735121036,
+      "epochs": 40,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0377,
+    "model_kb": 62.255859375,
+    "file": "autoencoder__stability__seed42__rank2.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "stability",
+    "seed": 42,
+    "rank": 3,
+    "config": "optimizada",
+    "value": 0.9728338908484091,
+    "params": {
+      "n_layers": 3,
+      "units": 44,
+      "latent_dim": 6,
+      "learning_rate": 0.00013400367243354819,
+      "batch_size": 256,
+      "dropout": 0.26616382277289796,
+      "epochs": 60,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0358,
+    "model_kb": 28.294921875,
+    "file": "autoencoder__stability__seed42__rank3.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "stability",
+    "seed": 42,
+    "rank": 4,
+    "config": "optimizada",
+    "value": 0.9727394495644808,
+    "params": {
+      "n_layers": 2,
+      "units": 11,
+      "latent_dim": 6,
+      "learning_rate": 0.0005404103854647331,
+      "batch_size": 128,
+      "dropout": 0.17772437065861274,
+      "epochs": 20,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0309,
+    "model_kb": 8.3759765625,
+    "file": "autoencoder__stability__seed42__rank4.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 0,
+    "config": "oraculo",
+    "value": 0.14776145529032003,
+    "params": {
+      "max_samples": 1922,
+      "n_estimators": 100,
+      "max_features": 0.7553354902474219,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 4.1265,
+    "model_kb": 1119.013671875,
+    "file": "iforest__oracle__seed42__rank0.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 1,
+    "config": "oraculo",
+    "value": 0.14527077099840452,
+    "params": {
+      "max_samples": 2454,
+      "n_estimators": 125,
+      "max_features": 0.7375049293809638,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 5.0779,
+    "model_kb": 1792.0126953125,
+    "file": "iforest__oracle__seed42__rank1.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 2,
+    "config": "oraculo",
+    "value": 0.13946510609944376,
+    "params": {
+      "max_samples": 3886,
+      "n_estimators": 175,
+      "max_features": 0.794603753693586,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 7.168900000000001,
+    "model_kb": 2464.5537109375,
+    "file": "iforest__oracle__seed42__rank2.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 3,
+    "config": "oraculo",
+    "value": 0.13736756003495437,
+    "params": {
+      "max_samples": 3849,
+      "n_estimators": 150,
+      "max_features": 0.7189014541478983,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 6.06775,
+    "model_kb": 2037.763671875,
+    "file": "iforest__oracle__seed42__rank3.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 4,
+    "config": "oraculo",
+    "value": 0.13684723975672994,
+    "params": {
+      "max_samples": 3362,
+      "n_estimators": 175,
+      "max_features": 0.8549355047792352,
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": 7.1663,
+    "model_kb": 2614.08203125,
+    "file": "iforest__oracle__seed42__rank4.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 0,
+    "config": "oraculo",
+    "value": 0.8561563560338604,
+    "params": {
+      "max_samples": 2175,
+      "n_estimators": 125,
+      "max_features": 0.6732537191097947,
+      "random_state": 42
+    },
+    "q": 0.8094469335248188,
+    "latency_dev_ms": 5.33575,
+    "model_kb": 1544.0341796875,
+    "file": "iforest__oracle_q__seed42__rank0.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 1,
+    "config": "oraculo",
+    "value": 0.8513702333197278,
+    "params": {
+      "max_samples": 1513,
+      "n_estimators": 200,
+      "max_features": 0.9017982609657532,
+      "random_state": 42
+    },
+    "q": 0.804439928726682,
+    "latency_dev_ms": 8.5716,
+    "model_kb": 2211.974609375,
+    "file": "iforest__oracle_q__seed42__rank1.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 2,
+    "config": "oraculo",
+    "value": 0.6998906782553902,
+    "params": {
+      "max_samples": 2120,
+      "n_estimators": 175,
+      "max_features": 0.8330417599006973,
+      "random_state": 42
+    },
+    "q": 0.8492936849928534,
+    "latency_dev_ms": 7.3667,
+    "model_kb": 2548.267578125,
+    "file": "iforest__oracle_q__seed42__rank2.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 3,
+    "config": "oraculo",
+    "value": 0.6950050245085452,
+    "params": {
+      "max_samples": 3855,
+      "n_estimators": 175,
+      "max_features": 0.7726813616995495,
+      "random_state": 42
+    },
+    "q": 0.8328744048441803,
+    "latency_dev_ms": 7.083,
+    "model_kb": 2479.486328125,
+    "file": "iforest__oracle_q__seed42__rank3.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 4,
+    "config": "oraculo",
+    "value": 0.6915452470620976,
+    "params": {
+      "max_samples": 1256,
+      "n_estimators": 150,
+      "max_features": 0.9084088397528339,
+      "random_state": 42
+    },
+    "q": 0.8337889815685126,
+    "latency_dev_ms": 6.3231,
+    "model_kb": 1626.0966796875,
+    "file": "iforest__oracle_q__seed42__rank4.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 0,
+    "config": "oraculo",
+    "value": 0.4389641637840252,
+    "params": {
+      "n_neighbors": 94,
+      "leaf_size": 60,
+      "metric": "manhattan"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.5195000000000001,
+    "model_kb": 1863.1396484375,
+    "file": "lof__oracle__seed42__rank0.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 1,
+    "config": "oraculo",
+    "value": 0.4389641637840252,
+    "params": {
+      "n_neighbors": 94,
+      "leaf_size": 42,
+      "metric": "manhattan"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.4103,
+    "model_kb": 1863.1396484375,
+    "file": "lof__oracle__seed42__rank1.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 2,
+    "config": "oraculo",
+    "value": 0.4384095900138229,
+    "params": {
+      "n_neighbors": 61,
+      "leaf_size": 60,
+      "metric": "manhattan"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.40575,
+    "model_kb": 1411.9677734375,
+    "file": "lof__oracle__seed42__rank2.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 3,
+    "config": "oraculo",
+    "value": 0.43822507805657945,
+    "params": {
+      "n_neighbors": 91,
+      "leaf_size": 59,
+      "metric": "manhattan"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.40105,
+    "model_kb": 1822.1240234375,
+    "file": "lof__oracle__seed42__rank3.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 4,
+    "config": "oraculo",
+    "value": 0.43735124524680563,
+    "params": {
+      "n_neighbors": 62,
+      "leaf_size": 46,
+      "metric": "manhattan"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.55345,
+    "model_kb": 1425.6396484375,
+    "file": "lof__oracle__seed42__rank4.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 0,
+    "config": "oraculo",
+    "value": 0.9325185326205058,
+    "params": {
+      "n_neighbors": 71,
+      "leaf_size": 38,
+      "metric": "manhattan"
+    },
+    "q": 0.8883780143279569,
+    "latency_dev_ms": 0.51215,
+    "model_kb": 1548.6865234375,
+    "file": "lof__oracle_q__seed42__rank0.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 1,
+    "config": "oraculo",
+    "value": 0.9310384485039233,
+    "params": {
+      "n_neighbors": 82,
+      "leaf_size": 25,
+      "metric": "manhattan"
+    },
+    "q": 0.8875903462541807,
+    "latency_dev_ms": 0.4179,
+    "model_kb": 1699.0771484375,
+    "file": "lof__oracle_q__seed42__rank1.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 2,
+    "config": "oraculo",
+    "value": 0.9250981111758286,
+    "params": {
+      "n_neighbors": 93,
+      "leaf_size": 40,
+      "metric": "manhattan"
+    },
+    "q": 0.8715519453993088,
+    "latency_dev_ms": 0.5122,
+    "model_kb": 1849.4677734375,
+    "file": "lof__oracle_q__seed42__rank2.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 3,
+    "config": "oraculo",
+    "value": 0.9236079777068039,
+    "params": {
+      "n_neighbors": 88,
+      "leaf_size": 52,
+      "metric": "manhattan"
+    },
+    "q": 0.8678885414646446,
+    "latency_dev_ms": 0.45665,
+    "model_kb": 1781.1083984375,
+    "file": "lof__oracle_q__seed42__rank3.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 4,
+    "config": "oraculo",
+    "value": 0.9191235936313491,
+    "params": {
+      "n_neighbors": 78,
+      "leaf_size": 32,
+      "metric": "manhattan"
+    },
+    "q": 0.9047918190235009,
+    "latency_dev_ms": 0.3927,
+    "model_kb": 1644.3896484375,
+    "file": "lof__oracle_q__seed42__rank4.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 0,
+    "config": "oraculo",
+    "value": 0.4438368041650518,
+    "params": {
+      "n_layers": 2,
+      "units": 63,
+      "latent_dim": 9,
+      "learning_rate": 0.0025255372045246737,
+      "batch_size": 64,
+      "dropout": 0.0814804509146569,
+      "epochs": 20,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0328,
+    "model_kb": 41.7392578125,
+    "file": "autoencoder__oracle__seed42__rank0.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 1,
+    "config": "oraculo",
+    "value": 0.29740854259883437,
+    "params": {
+      "n_layers": 2,
+      "units": 42,
+      "latent_dim": 8,
+      "learning_rate": 0.0012370526256961403,
+      "batch_size": 64,
+      "dropout": 0.020008545928324847,
+      "epochs": 20,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0303,
+    "model_kb": 25.6962890625,
+    "file": "autoencoder__oracle__seed42__rank1.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 2,
+    "config": "oraculo",
+    "value": 0.2887868157420126,
+    "params": {
+      "n_layers": 2,
+      "units": 115,
+      "latent_dim": 8,
+      "learning_rate": 0.001674091834563067,
+      "batch_size": 64,
+      "dropout": 0.005424301523751278,
+      "epochs": 40,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0319,
+    "model_kb": 95.939453125,
+    "file": "autoencoder__oracle__seed42__rank2.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 3,
+    "config": "oraculo",
+    "value": 0.2879040236262793,
+    "params": {
+      "n_layers": 2,
+      "units": 126,
+      "latent_dim": 9,
+      "learning_rate": 0.005383633004759674,
+      "batch_size": 64,
+      "dropout": 0.06937306294156634,
+      "epochs": 40,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0334,
+    "model_kb": 111.185546875,
+    "file": "autoencoder__oracle__seed42__rank3.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "oracle",
+    "seed": 42,
+    "rank": 4,
+    "config": "oraculo",
+    "value": 0.28486267747426375,
+    "params": {
+      "n_layers": 2,
+      "units": 42,
+      "latent_dim": 9,
+      "learning_rate": 0.002275335364420116,
+      "batch_size": 64,
+      "dropout": 0.06114075568742225,
+      "epochs": 20,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": 0.0334,
+    "model_kb": 25.8642578125,
+    "file": "autoencoder__oracle__seed42__rank4.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 0,
+    "config": "oraculo",
+    "value": 0.4859222905445413,
+    "params": {
+      "n_layers": 1,
+      "units": 21,
+      "latent_dim": 3,
+      "learning_rate": 0.005323617594751502,
+      "batch_size": 64,
+      "dropout": 0.09755499660802411,
+      "epochs": 80,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.9268739367996874,
+    "latency_dev_ms": 0.0245,
+    "model_kb": 10.9697265625,
+    "file": "autoencoder__oracle_q__seed42__rank0.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 1,
+    "config": "oraculo",
+    "value": 0.4776595766656396,
+    "params": {
+      "n_layers": 1,
+      "units": 33,
+      "latent_dim": 7,
+      "learning_rate": 0.00038426309022773574,
+      "batch_size": 64,
+      "dropout": 0.20202378947917207,
+      "epochs": 90,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.9108735874977003,
+    "latency_dev_ms": 0.0245,
+    "model_kb": 16.1416015625,
+    "file": "autoencoder__oracle_q__seed42__rank1.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 2,
+    "config": "oraculo",
+    "value": 0.47535352692884714,
+    "params": {
+      "n_layers": 1,
+      "units": 22,
+      "latent_dim": 6,
+      "learning_rate": 0.0006620575431770736,
+      "batch_size": 64,
+      "dropout": 0.03197723849056064,
+      "epochs": 100,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.9131407311868884,
+    "latency_dev_ms": 0.025,
+    "model_kb": 11.8408203125,
+    "file": "autoencoder__oracle_q__seed42__rank2.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 3,
+    "config": "oraculo",
+    "value": 0.46984335057439175,
+    "params": {
+      "n_layers": 1,
+      "units": 49,
+      "latent_dim": 6,
+      "learning_rate": 0.001096821720752952,
+      "batch_size": 256,
+      "dropout": 0.28184968246925673,
+      "epochs": 100,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.918982095783406,
+    "latency_dev_ms": 0.0241,
+    "model_kb": 21.755859375,
+    "file": "autoencoder__oracle_q__seed42__rank3.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "oracle_q",
+    "seed": 42,
+    "rank": 4,
+    "config": "oraculo",
+    "value": 0.4696809851112503,
+    "params": {
+      "n_layers": 1,
+      "units": 41,
+      "latent_dim": 8,
+      "learning_rate": 0.00035896222109001776,
+      "batch_size": 64,
+      "dropout": 0.2591409796049824,
+      "epochs": 100,
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.9156744980243468,
+    "latency_dev_ms": 0.0253,
+    "model_kb": 19.4658203125,
+    "file": "autoencoder__oracle_q__seed42__rank4.pkl"
+  },
+  {
+    "detector": "iforest",
+    "metric": "por_defecto",
+    "seed": 42,
+    "rank": 0,
+    "config": "linea_base",
+    "value": null,
+    "params": {
+      "random_state": 42
+    },
+    "q": 0.95,
+    "latency_dev_ms": null,
+    "model_kb": 526.794921875,
+    "file": "iforest__por_defecto__seed42__rank0.pkl"
+  },
+  {
+    "detector": "lof",
+    "metric": "por_defecto",
+    "seed": 42,
+    "rank": 0,
+    "config": "linea_base",
+    "value": null,
+    "params": {},
+    "q": 0.95,
+    "latency_dev_ms": null,
+    "model_kb": 851.4169921875,
+    "file": "lof__por_defecto__seed42__rank0.pkl"
+  },
+  {
+    "detector": "autoencoder",
+    "metric": "por_defecto",
+    "seed": 42,
+    "rank": 0,
+    "config": "linea_base",
+    "value": null,
+    "params": {
+      "random_state": 42,
+      "backend": "auto"
+    },
+    "q": 0.95,
+    "latency_dev_ms": null,
+    "model_kb": 42.626953125,
+    "file": "autoencoder__por_defecto__seed42__rank0.pkl"
+  }
+]

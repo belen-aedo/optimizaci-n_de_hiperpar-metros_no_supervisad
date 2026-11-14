@@ -1,170 +1,162 @@
 """
-prepare_splits.py — Etapa 0 del pipeline (bloque 2 del diagrama metodologico).
+prepare_splits.py — Etapa 0 (bloque 2 del diagrama metodologico).
 
-POR QUE EXISTE ESTE SCRIPT
---------------------------
-El pipeline preprocessor_v2 divide los datos en train/test 80/20 de forma
-aleatoria, quedando ambos bloques con trafico mixto (normal + ataque). Ese
-esquema es correcto para un benchmark supervisado, pero NO corresponde al
-protocolo de esta investigacion, que exige:
+Tres bloques, como en la propuesta aprobada:
 
-    - Entrenamiento : SOLO trafico normal, sin etiquetas
-    - Validacion    : SOLO trafico normal, sin etiquetas
-    - Prueba        : trafico normal + ataques, etiquetado, aislado
+    train : SOLO trafico normal, sin etiquetas
+    val   : SOLO trafico normal, sin etiquetas  (calibracion del umbral + objetivo)
+    test  : normal + ataque, etiquetado, aislado. Se SUBDIVIDE (estratificado,
+            semilla fija) en dos partes disjuntas:
+              test_oracle : la usa SOLO el escenario oraculo para maximizar MCC
+              test_final  : se abre una sola vez (evaluate.py); igual para los
+                            tres escenarios
 
-Por lo tanto este script reune ambos bloques del preprocesador y reconstruye
-la particion segun el protocolo antifuga descrito en la metodologia.
+El oraculo necesita etiquetas para optimizar; si usara los mismos datos con que
+luego se evalua, su cota superior quedaria inflada. De ahi la subdivision.
 
-QUE PRODUCE
------------
-    data/splits/train.parquet   (features, sin etiqueta)
-    data/splits/val.parquet     (features, sin etiqueta)
-    data/splits/test.parquet    (features + columna y_true)
-    data/splits/manifest.json   (hashes, tamanos, distribucion de clases)
+Opcional (split.refit_scaler): reescala todas las columnas con media y
+desviacion del TRAIN NORMAL. Las salidas de preprocessor_v2 se ajustaron con
+trafico mixto (incluye ataques); esto evita que esa informacion llegue al
+detector. NO corrige la seleccion de variables si uso etiquetas (L1, ANOVA,
+informacion mutua, chi2): ver README_CAMBIOS.md.
 
 USO
----
-    python src/prepare_splits.py
-    python src/prepare_splits.py --format csv --config config/experiment.yaml
+    python src/prepare_splits.py --input-format csv --format csv
 """
 
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from common import (
-    load_config, outputs_dir, read_table, save_json, selector_paths,
-    set_seeds, sha256_of, splits_dir, write_table,
-)
+from common import (load_config, outputs_dir, read_table, save_json,
+                    selector_paths, set_seeds, sha256_of, splits_dir, write_table)
 
 
 def build_target(df: pd.DataFrame, cfg) -> pd.Series:
-    """Devuelve una serie binaria: 1 = anomalia, 0 = normal."""
+    """1 = anomalia, 0 = normal."""
     label_col = cfg["dataset"]["label_col"]
     normal = str(cfg["dataset"]["normal_label"]).lower()
-
     if label_col not in df.columns:
-        raise KeyError(
-            f"La columna de etiqueta '{label_col}' no esta en los datos.\n"
-            f"Columnas disponibles: {list(df.columns)[:20]} ...\n"
-            "Ajuste dataset.label_col en config/experiment.yaml."
-        )
+        raise KeyError(f"La columna de etiqueta '{label_col}' no esta en los datos. "
+                       f"Columnas: {list(df.columns)[:20]} ...")
     raw = df[label_col].astype(str).str.strip().str.lower()
     return (raw != normal).astype(int)
 
 
 def feature_matrix(df: pd.DataFrame, cfg) -> pd.DataFrame:
-    """Descarta etiqueta y metadatos, y conserva solo columnas numericas."""
-    drop = [cfg["dataset"]["label_col"], *cfg["dataset"]["metadata_cols"]]
+    drop = [cfg["dataset"]["label_col"], *cfg["dataset"].get("metadata_cols", [])]
     X = df.drop(columns=[c for c in drop if c in df.columns], errors="ignore")
     X = X.select_dtypes(include=[np.number])
     X = X.replace([np.inf, -np.inf], np.nan).fillna(0.0)
     return X.astype(np.float32)
 
 
+def stratified_halves(rng, y: np.ndarray, idx: np.ndarray, frac_first: float):
+    """Divide idx en (primera, segunda) conservando la proporcion de clases."""
+    first, second = [], []
+    for cls in (0, 1):
+        sub = rng.permutation(idx[y[idx] == cls])
+        k = int(round(frac_first * len(sub)))
+        first.append(sub[:k])
+        second.append(sub[k:])
+    return rng.permutation(np.concatenate(first)), rng.permutation(np.concatenate(second))
+
+
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default=None)
-    ap.add_argument("--format", default="parquet", choices=["parquet", "csv"],
-                    help="Formato de salida de las particiones")
-    ap.add_argument("--input-format", default="parquet", choices=["parquet", "csv"],
-                    help="Formato de los best_features de preprocessor_v2")
+    ap.add_argument("--format", default="parquet", choices=["parquet", "csv"])
+    ap.add_argument("--input-format", default="parquet", choices=["parquet", "csv"])
     args = ap.parse_args()
 
     cfg = load_config(args.config)
     sp = cfg["split"]
     set_seeds(sp["seed"])
 
-    # ---- 1. Cargar las salidas del preprocesador y reunirlas -------------- #
     train_path, test_path = selector_paths(cfg, args.input_format)
-    print(f"Leyendo espacio de caracteristicas '{cfg['paths']['selector']}':")
-    print(f"  {train_path}")
-    print(f"  {test_path}")
     df = pd.concat([read_table(train_path), read_table(test_path)], ignore_index=True)
-    print(f"-> {len(df):,} filas reunidas, {df.shape[1]} columnas")
-
-    y = build_target(df, cfg)
+    y = build_target(df, cfg).to_numpy()
     X = feature_matrix(df, cfg)
-    print(f"-> {X.shape[1]} caracteristicas numericas conservadas")
-    print(f"-> normal: {(y == 0).sum():,} | ataque: {(y == 1).sum():,}")
-
+    print(f"{len(df):,} filas | {X.shape[1]} caracteristicas | "
+          f"normal {(y == 0).sum():,} | ataque {(y == 1).sum():,}")
     if (y == 0).sum() == 0 or (y == 1).sum() == 0:
-        raise ValueError(
-            "Una de las dos clases quedo vacia. Revise dataset.normal_label "
-            "en la configuracion contra los valores reales de la columna."
-        )
+        raise ValueError("Una de las clases quedo vacia: revise dataset.normal_label.")
 
-    # ---- 2. Reparticionar segun el protocolo antifuga --------------------- #
     rng = np.random.default_rng(sp["seed"])
-    benign_idx = rng.permutation(np.flatnonzero(y.to_numpy() == 0))
-    attack_idx = np.flatnonzero(y.to_numpy() == 1)
+    benign = rng.permutation(np.flatnonzero(y == 0))
+    attack = np.flatnonzero(y == 1)
+    n_b = len(benign)
+    n_tr, n_va = int(sp["train_frac"] * n_b), int(sp["val_frac"] * n_b)
+    idx_train, idx_val = benign[:n_tr], benign[n_tr:n_tr + n_va]
+    idx_test_b = benign[n_tr + n_va:]
 
-    n_b = len(benign_idx)
-    n_train = int(sp["train_frac"] * n_b)
-    n_val = int(sp["val_frac"] * n_b)
+    if sp["attack_frac_in_test"] < 1.0:
+        attack = rng.permutation(attack)[: int(sp["attack_frac_in_test"] * len(attack))]
+    idx_test = np.concatenate([idx_test_b, attack])
+    idx_orc, idx_fin = stratified_halves(rng, y, idx_test, sp["oracle_frac_of_test"])
 
-    idx_train = benign_idx[:n_train]
-    idx_val = benign_idx[n_train:n_train + n_val]
-    idx_test_benign = benign_idx[n_train + n_val:]
+    # ---- escalado ajustado SOLO con train normal ----------------------------
+    Xv = X.to_numpy(dtype=np.float64)
+    scaler = None
+    if sp["refit_scaler"]:
+        mu = Xv[idx_train].mean(axis=0)
+        sd = Xv[idx_train].std(axis=0)
+        sd[sd < 1e-12] = 1.0
+        Xv = (Xv - mu) / sd
+        scaler = {"mean": mu.tolist(), "std": sd.tolist()}
+    Xdf = pd.DataFrame(Xv.astype(np.float32), columns=X.columns)
 
-    frac_atk = float(sp.get("attack_frac_in_test", 1.0))
-    if frac_atk < 1.0:
-        attack_idx = rng.permutation(attack_idx)[: int(frac_atk * len(attack_idx))]
-
-    idx_test = np.concatenate([idx_test_benign, attack_idx])
-    idx_test = rng.permutation(idx_test)
-
-    # ---- 3. Escribir las particiones -------------------------------------- #
     out = splits_dir(cfg)
     out.mkdir(parents=True, exist_ok=True)
     fmt = args.format
+    for name, idx in (("train", idx_train), ("val", idx_val)):
+        write_table(Xdf.iloc[idx].reset_index(drop=True), out / f"{name}.{fmt}")
+    for name, idx in (("test_oracle", idx_orc), ("test_final", idx_fin)):
+        d = Xdf.iloc[idx].reset_index(drop=True)
+        d["y_true"] = y[idx]
+        write_table(d, out / f"{name}.{fmt}")
+    if scaler:
+        save_json(scaler, out / "scaler.json")
 
-    df_train = X.iloc[idx_train].reset_index(drop=True)
-    df_val = X.iloc[idx_val].reset_index(drop=True)
-    df_test = X.iloc[idx_test].reset_index(drop=True)
-    df_test["y_true"] = y.iloc[idx_test].to_numpy()
+    def block(idx):
+        return {"rows": int(len(idx)), "normal": int((y[idx] == 0).sum()),
+                "attack": int((y[idx] == 1).sum()),
+                "attack_ratio": round(float((y[idx] == 1).mean()), 4)}
 
-    write_table(df_train, out / f"train.{fmt}")
-    write_table(df_val, out / f"val.{fmt}")
-    write_table(df_test, out / f"test.{fmt}")
-
-    # ---- 4. Manifiesto de trazabilidad ------------------------------------ #
     manifest = {
-        "dataset": cfg["paths"]["dataset_name"],
-        "selector": cfg["paths"]["selector"],
-        "n_features": int(X.shape[1]),
-        "feature_names": list(X.columns),
-        "seed": sp["seed"],
+        "dataset": cfg["paths"]["dataset_name"], "selector": cfg["paths"]["selector"],
+        "n_features": int(X.shape[1]), "feature_names": list(X.columns),
+        "seed": sp["seed"], "scaler_refit_on_train_normal": bool(scaler),
         "splits": {
-            "train": {"rows": int(len(df_train)), "content": "solo normal, sin etiquetas"},
-            "val": {"rows": int(len(df_val)), "content": "solo normal, sin etiquetas"},
-            "test": {
-                "rows": int(len(df_test)),
-                "normal": int((df_test["y_true"] == 0).sum()),
-                "attack": int((df_test["y_true"] == 1).sum()),
-                "attack_ratio": round(float((df_test["y_true"] == 1).mean()), 4),
-            },
+            "train": {"rows": int(len(idx_train)), "content": "solo normal, sin etiquetas"},
+            "val": {"rows": int(len(idx_val)), "content": "solo normal, sin etiquetas"},
+            "test_oracle": {**block(idx_orc), "use": "solo escenario oraculo"},
+            "test_final": {**block(idx_fin), "use": "solo evaluate.py, una vez"},
         },
-        "sha256": {
-            name: sha256_of(out / f"{name}.{fmt}") for name in ("train", "val", "test")
-        },
-        "note": (
-            "El bloque de prueba esta aislado: ningun script de optimizacion "
-            "debe leerlo. Verifique el hash antes y despues del experimento."
-        ),
+        "sha256": {n: sha256_of(out / f"{n}.{fmt}")
+                   for n in ("train", "val", "test_oracle", "test_final")},
+        "note": ("test_final esta aislado: ningun script de optimizacion debe leerlo. "
+                 "Verifique el hash antes y despues del experimento."),
     }
     save_json(manifest, out / "manifest.json")
-
-    print("\nParticiones generadas en", out)
-    for k, v in manifest["splits"].items():
-        print(f"  {k:6s}: {v['rows']:,} filas")
-    print(f"  ratio de ataque en test: {manifest['splits']['test']['attack_ratio']}")
-    print(f"\nManifiesto: {out / 'manifest.json'}")
     save_json(manifest, outputs_dir(cfg) / "logs" / "splits_manifest.json")
+
+    print("\nParticiones en", out)
+    for k, v in manifest["splits"].items():
+        extra = f" | ataque {v['attack_ratio']:.1%}" if "attack_ratio" in v else ""
+        print(f"  {k:12s}: {v['rows']:,} filas{extra}")
+    ratio = manifest["splits"]["test_final"]["attack_ratio"]
+    if ratio > 0.5:
+        print(f"\n[!] AVISO: el {ratio:.0%} de test_final es ataque. Con esa prevalencia "
+              "la Precision es enganosamente alta y el MCC no representa un despliegue "
+              "real. evaluate.py reporta tambien MCC ajustado a prevalencia "
+              f"{sp['report_prevalences']}; ademas conviene usar mas trafico normal.")
+    if manifest["splits"]["test_oracle"]["normal"] < 300:
+        print("[!] AVISO: pocos normales en test_oracle: el FPR estimado sera ruidoso.")
 
 
 if __name__ == "__main__":
